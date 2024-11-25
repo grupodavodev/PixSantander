@@ -42,7 +42,7 @@ else:
         
     if iPARAMETRO_1 == 2: 
         try:
-            iPARAMETRO_2 = float(sys.argv[2])
+            iPARAMETRO_2 = sys.argv[2]
         except Exception as e:
             logger.error(f"{e}")
             print(f"Parametro 2 (Valor) nao informado, abortando!!!")
@@ -416,7 +416,7 @@ def criaDevolucaoPix(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTX
     return ""
 
 #################### ACTIONS
-def geraNovaCobranca(iTXID="", iSEGUNDOSEXPIRA=0, iVALOR=0):
+def geraNovaCobranca(iTXID="", iSEGUNDOSEXPIRA=0, iVALOR="0"):
     if iTXID == "": iTXID = gerar_string_personalizada()
     if iSEGUNDOSEXPIRA == 0: iSEGUNDOSEXPIRA = 3600
     iCHAVERECEBEDOR = iCHAVEPIX_RECEBEDOR
