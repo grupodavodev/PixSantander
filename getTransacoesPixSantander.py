@@ -1,6 +1,6 @@
 #WESLEY 23.11.24
 
-#Bibliotecas uteis
+#Bibliotecas uteis #
 import json
 import crcmod
 import os
