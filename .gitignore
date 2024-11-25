@@ -1,4 +1,4 @@
 .env
-.crt
-.key
-.txt
+*.crt
+*.key
+*.txt
