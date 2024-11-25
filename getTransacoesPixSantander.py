@@ -385,7 +385,8 @@ def consultaEndToEnd_Valor(iTXID):
     iVALOR = ""
     for iITEMS in curORA.execute(iQUERY).fetchall():
         iENDTOEND = str(iITEMS[0])
-        iVALOR = str(iITEMS[1])
+        iVALOR = iITEMS[1]
+        iVALOR = f"{iVALOR:.2f}"
     return (iENDTOEND, iVALOR)
 
 def criaDevolucaoPix(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTXID):
@@ -401,6 +402,7 @@ def criaDevolucaoPix(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTX
                 'Authorization': 'Bearer ' + str(iTOKEN)
          }
     payload = {"valor": str(iVALOR)}
+    logger.debug(f"{payload}")
     json_payload = json.dumps(payload) 
     logger.debug(f"url: {url}")
     logger.debug(f"endpoint: {endpoint}")
