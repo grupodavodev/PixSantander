@@ -356,6 +356,7 @@ def criaCob(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTXID, iSEGU
                 },
                 "chave": str(iCHAVERECEBEDOR)
                 } 
+    logger.debug(f"{payload}")
     json_payload = json.dumps(payload) 
     logger.debug(f"url: {url}")
     logger.debug(f"endpoint: {endpoint}")
