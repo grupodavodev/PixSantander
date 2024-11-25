@@ -1,0 +1,19 @@
+
+geracao de certificado pem
+
+em oraas009:
+
+openssl pkcs12 -in /usr/davo/A1-DAVO_2024.pfx -out /usr/davo/A1DAVO.pem -nodes
+
+
+
+
+
+quebrando o certificado em KEY e CRT
+
+openssl pkey -in /usr/davo/A1DAVO.pem -out /usr/davo/A1DAVOPEMprivate.key
+
+openssl x509 -in /usr/davo/A1DAVO.pem -out /usr/davo/A1DAVOPEMcertificate.crt
+
+
+enviar o CRT
