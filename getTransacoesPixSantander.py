@@ -1,5 +1,6 @@
 #WESLEY 23.11.24
-import requests
+
+#Bibliotecas uteis
 import json
 import crcmod
 import os
@@ -13,56 +14,89 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import random
 import string
+from dotenv import load_dotenv 
+load_dotenv() 
 
-#PARAMETROS
-iDMENOS = 1
-try:    
-    iDMENOS = int(sys.argv[1])
-except:
-    pass
-iDATA_EXTRACAO = datetime.now() + timedelta(days=-iDMENOS)
-
-#LOG
-sys.path.append("R:/DEPARTAMENTO/TECNOLOGIA/FUNCIONAL/Projetos/libpydavo" if os.name == 'nt' else "/usr/davo/libpydavo")
+#LOG #IMPORTANDO LIB QUE GRAVA O LOG PADRAO
+sys.path.append(os.getenv("iPATHLOG_WIN") if os.name == 'nt' else os.getenv("iPATHLOG_LINUX"))
 from logging_config import setup_logger #log padrao
-logger = setup_logger(app_name=os.path.basename(__file__).replace('.py', ''), project_name="pix")
+logger = setup_logger(app_name=os.path.basename(__file__).replace('.py', ''), project_name=os.getenv("iPROJECTNAMELOG"))
 
-#VARIAVEIS
-iIMPORTAORACLE = True
-iNOME_INSTITUICAO = "SANTANDER"
-iTIPO_TRAN = "pix"
-logger.debug(f"os.name: {os.name}")
-if os.name == 'nt': #windows    
-    iCERTFILECRT = "R:/DEPARTAMENTO/TECNOLOGIA/FUNCIONAL/Projetos/PIX/SANTANDER/A1DAVOPEMcertificate.crt"
-    iKEYFILE = "R:/DEPARTAMENTO/TECNOLOGIA/FUNCIONAL/Projetos/PIX/SANTANDER/A1DAVOPEMprivate.key"
+
+#PARAMETROS 
+#1=Consulta PIx Recebidos 
+#2=Gerar Pix copiaECola
+#3=Devolver 1 Pix
+if len(sys.argv) == 1:
+    print("Parametro nao informado:\n1=Consultar Pix Recebidos\n2=Gerar Pix copiaECola\n3=Devolver 1 Pix")
+    exit()
 else:
-    os.environ['ORACLE_HOME'] = "/usr/lib/oracle/19.6/client64"
-    iCERTFILECRT = "/usr/davo/PIX/Keys/A1DAVOPEMcertificate.crt"
-    iKEYFILE = "/usr/davo/PIX/Keys/A1DAVOPEMprivate.key"
+    iPARAMETRO_1 = int(sys.argv[1])    
+    if iPARAMETRO_1 == 1: 
+        iPARAMETRO_2 = 1       
+        try:    
+            iPARAMETRO_2 = int(sys.argv[2]) #SEGUNDO PARAMETROS = D-X (1 igual a ontem, 0 igual a hoje ....)  
+        except:
+            pass
+        iDATA_EXTRACAO = datetime.now() + timedelta(days=-iPARAMETRO_2)
+        
+    if iPARAMETRO_1 == 2: 
+        try:
+            iPARAMETRO_2 = float(sys.argv[2])
+        except Exception as e:
+            logger.error(f"{e}")
+            print(f"Parametro 2 (Valor) nao informado, abortando!!!")
+            exit()
+    
+    if iPARAMETRO_1 == 3:
+        try:
+            iPARAMETRO_2 = str(sys.argv[2])
+        except Exception as e:
+            logger.error(f"{e}")
+            print(f"Parametro 2 (TXID) nao informado, abortando!!!")
+            exit()
 
-#AMBIENTE
+
+#CONSTANTES
+iIMPORTAORACLE = True
 iAMBIENTESANTANDER = "prd"
 logger.debug(f"iAMBIENTESANTANDER: {iAMBIENTESANTANDER}")
+iNOME_INSTITUICAO = "SANTANDER"
+iTIPO_TRAN = "pix"
+iCHAVEPIX_RECEBEDOR = os.getenv("iCHAVEPIX_RECEBEDOR")
+iNOME_EMPRESA_CADSANTANDER = os.getenv("iSTRING_NOMEEMPRESA")
+logger.debug(f"os.name: {os.name}")
+if os.name == 'nt': #windows    
+    iCERTFILECRT = os.getenv("iCERTFILECRT_WIN")
+    iKEYFILE = os.getenv("iKEYFILE_WIN")
+else:
+    os.environ['ORACLE_HOME'] = os.getenv("iORACLEHOME_LINUX")
+    iCERTFILECRT = os.getenv("iCERTFILECRT_LINUX")
+    iKEYFILE = os.getenv("iKEYFILE_LINUX")
+
 if iAMBIENTESANTANDER == "prd":
     iURL = "trust-pix.santander.com.br"
-    iCLIENTSECRET = "e5QqaKU7NMJbn0LD"
-    iCLIENTID = "lWiRkbb8Wo4NWyZDGANys7Bcfofa32FY"
+    iCLIENTSECRET = os.getenv("iCLIENTID_SANTANDER_PRD")
+    iCLIENTID = os.getenv("iCLIENTSECRET_SANTANDER_PRD")
 
+#CONEXAO ORACLE
 try:    
-    myCONNORA = cx_Oracle.connect('davo/d4v0@davoprd') #conexao com o Oracle
+    myCONNORA = cx_Oracle.connect(os.getenv("iSTRINGCONEXAOORACLE")) #conexao com o Oracle 
     myCONNORA.autocommit = True
-    curORA = myCONNORA.cursor() #execucoes Oracle
+    curORA = myCONNORA.cursor() 
     try:
         curORA.execute("ALTER SESSION SET NLS_NUMERIC_CHARACTERS= ',.' ")
         curORA.execute("alter session set nls_date_format = 'DD/MM/YYYY'")    
     except cx_Oracle.DatabaseError as e_sql: 
         print("Erro : " + str(e_sql))
-except:
-    print("Erro ao comunicar com Oracle em")
+except Exception as e:
+    logger.critica(f"{e}")
+    print(f"{e}")
     exit()
     pass
 
-def getToken(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET):    
+def getToken(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET):  
+    logger.info(f"Funcao, Recebe os dados do certificado e retorno o Token dinamico")  
     url = iURL
     endpoint = "/oauth/token?grant_type=client_credentials"          
     payload = {
@@ -92,8 +126,6 @@ def getToken(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET):
         access_token = ""
         logger.debug(f"response.text: {response.text}")
     return access_token
-
-
 
 ######################  CONSULTA RECEBIMENTOS PIX
 def gravaTRANSACAO(iNOME_INSTITUICAO, iTIPO_TRAN, iDATA_TRAN, iENDTOENDID, iTXID, iCHAVE, iVALOR, iPAGADOR, iVAL_DEVOLUCAO, iCLIENTID, iPAGE):
@@ -170,6 +202,7 @@ def gravaTRANSACAO(iNOME_INSTITUICAO, iTIPO_TRAN, iDATA_TRAN, iENDTOENDID, iTXID
 
                         END;
               """)
+    logger.debug(f"{iQUERY}")
     if iIMPORTAORACLE == False:
         return ""
     try:
@@ -244,8 +277,8 @@ def getPixRecebidos(iDATA_EXTRACAO, iURL, iPAGE, iCERTFILECRT, iKEYFILE, iCLIENT
     iHORA_FIM = "23:59:59"
     if datetime.now().strftime('%Y_%m_%d') == iDATA_EXTRACAO.strftime('%Y_%m_%d'): #SE FOR IGUAL HOJE ENTAO HORA FIM = HORA ATUAL, SENAO 23:59
         iHORA_FIM = str(datetime.now().strftime('%H:%M:%S'))
-    endpoint = "/api/v1/pix?inicio=" + str(iDATA_EXTRACAO.strftime('%Y-%m-%d')) + "T00:00:01Z&fim=" + str(iDATA_EXTRACAO.strftime('%Y-%m-%d') ) + "T" + str(iHORA_FIM) + "Z&paginacao.paginaAtual=" + str(iPAGE)
-    print(f"client_id: {iCLIENTID}      endpoint: {endpoint}")
+    #endpoint = "/api/v1/pix?inicio=" + str(iDATA_EXTRACAO.strftime('%Y-%m-%d')) + "T00:00:01Z&fim=" + str(iDATA_EXTRACAO.strftime('%Y-%m-%d') ) + "T" + str(iHORA_FIM) + "Z&paginacao.paginaAtual=" + str(iPAGE)
+    endpoint = f"/api/v1/pix?inicio={iDATA_EXTRACAO.strftime('%Y-%m-%d')}T00:00:01Z&fim={iDATA_EXTRACAO.strftime('%Y-%m-%d')}T{iHORA_FIM}Z&paginacao.paginaAtual={iPAGE}"
     iTOKEN = getToken(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET)
     headers = {
                 'Authorization': 'Bearer ' + str(iTOKEN)
@@ -262,9 +295,6 @@ def getPixRecebidos(iDATA_EXTRACAO, iURL, iPAGE, iCERTFILECRT, iKEYFILE, iCLIENT
         logger.debug(f"{data}")
         logger.debug(f"Abortando, sem mais ocorrencias!")
         return ""
-
-
-
 
 
 ########################### GERA COBRANCA
@@ -298,7 +328,7 @@ def geraCopiaCola(iLOCATION, iVALOR):
     iSTRINGCOPIACOLA += str(iVALOR)
     iSTRINGCOPIACOLA += "5802BR"
     iSTRINGCOPIACOLA += "59"
-    iNOMERECEBEDOR = "D'AVO SUPERMERCADO LTDA"
+    iNOMERECEBEDOR = iNOME_EMPRESA_CADSANTANDER
     iSTRINGCOPIACOLA += str(len(iNOMERECEBEDOR))
     iSTRINGCOPIACOLA += iNOMERECEBEDOR
     iSTRINGCOPIACOLA += "6008SAOPAULO"
@@ -342,26 +372,77 @@ def criaCob(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTXID, iSEGU
     return ""
 
 
+#################### DEVOLUCAO PIX
+def consultaEndToEnd_Valor(iTXID):
+    iQUERY = (f"""
+                SELECT P.ENDTOENDID, P.VALOR FROM DAVO.CONC_BANK_PIX P
+                WHERE 1 > 0
+                    AND P.INSTITUICAO = '{iNOME_INSTITUICAO}'
+                    AND P.TXID = '{iTXID}'
+              """)
+    iENDTOEND = ""
+    iVALOR = ""
+    for iITEMS in curORA.execute(iQUERY).fetchall():
+        iENDTOEND = str(iITEMS[0])
+        iVALOR = str(iITEMS[1])
+    return (iENDTOEND, iVALOR)
+
+def criaDevolucaoPix(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTXID):
+    url = iURL
+    conn = http.client.HTTPSConnection(url, cert_file=iCERTFILECRT, key_file=iKEYFILE)
+    iRETORNOCONSULTA = consultaEndToEnd_Valor(iTXID)
+    iENDTOEND = iRETORNOCONSULTA[0]
+    iVALOR = iRETORNOCONSULTA[1]
+    endpoint = f"/api/v1/pix/{iENDTOEND}/devolucao/{iTXID}"
+    iTOKEN = getToken(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET)
+    headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + str(iTOKEN)
+         }
+    payload = {"valor": str(iVALOR)}
+    json_payload = json.dumps(payload) 
+    logger.debug(f"url: {url}")
+    logger.debug(f"endpoint: {endpoint}")
+    conn.request("PUT", endpoint, headers=headers, body=json_payload)
+    response = conn.getresponse()
+    data = response.read()
+    status_code = response.status
+    logger.debug(f"status_code: {status_code}")
+    if status_code == 201:
+        return data.decode('utf-8')
+    else:
+        logger.debug(f"{data}")
+    return ""
 
 #################### ACTIONS
 def geraNovaCobranca(iTXID="", iSEGUNDOSEXPIRA=0, iVALOR=0):
     if iTXID == "": iTXID = gerar_string_personalizada()
     if iSEGUNDOSEXPIRA == 0: iSEGUNDOSEXPIRA = 3600
-    iCHAVERECEBEDOR = "43f29896-366c-4b36-a010-f2de140799dd"
+    iCHAVERECEBEDOR = iCHAVEPIX_RECEBEDOR
     i = criaCob(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTXID, iSEGUNDOSEXPIRA, iVALOR, iCHAVERECEBEDOR)
     return i
 
 def consultaRecebimentosPix(iDATA_EXTRACAO):
     getPixRecebidos(iDATA_EXTRACAO, iURL, 0, iCERTFILECRT, iKEYFILE, iCLIENTID, iCLIENTSECRET)
 
+def geraDevolucaoPix(iTXID):
+    i = criaDevolucaoPix(iCERTFILECRT, iKEYFILE, iURL, iCLIENTID, iCLIENTSECRET, iTXID)
+    return i
 
-##GERAR NOVA COBRANCA
-#iVALORCOBRANCA = 1.55
-#pix_copia_cola = geraNovaCobranca("", 0, iVALORCOBRANCA)
-#print(f"pix cpia e cola: {pix_copia_cola}")
 
 #CONSULTA COBRANCA PIX
-consultaRecebimentosPix(iDATA_EXTRACAO)
+if iPARAMETRO_1 == 1:
+    consultaRecebimentosPix(iDATA_EXTRACAO)
+
+##GERAR NOVA COBRANCA
+if iPARAMETRO_1 == 2:
+    pix_copia_cola = geraNovaCobranca("", 0, iPARAMETRO_2)
+    print(f"pix copia e cola: {pix_copia_cola}")
+
+##DEVOLUCAO
+if iPARAMETRO_1 == 3:
+    iDEVOLUCAO = geraDevolucaoPix(iPARAMETRO_2)
+    print(f"retorno: {iDEVOLUCAO}")
 
 try:
     myCONNORA.close()
